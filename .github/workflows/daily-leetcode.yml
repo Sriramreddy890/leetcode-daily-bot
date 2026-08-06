@@ -1,0 +1,54 @@
+name: Daily LeetCode solution
+
+on:
+  schedule:
+    # 03:00 UTC every day. GitHub may delay scheduled workflows during heavy load.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Regenerate even if today's solution already exists"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-leetcode-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run local checks
+        run: python -m unittest discover -s tests -v
+
+      - name: Fetch and generate today's solution
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5.6-luna' }}
+          OPENAI_REASONING_EFFORT: medium
+        run: python leetcode_daily_bot.py ${{ inputs.force && '--force' || '' }}
+
+      - name: Commit generated solution
+        run: |
+          git config user.name "leetcode-daily-bot"
+          git config user.email "leetcode-daily-bot@users.noreply.github.com"
+          git add solutions/
+          git diff --cached --quiet || git commit -m "chore: add daily LeetCode solution"
+          git push
