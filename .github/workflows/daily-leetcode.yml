@@ -2,8 +2,8 @@ name: Daily LeetCode solution
 
 on:
   schedule:
-    # 03:00 UTC every day. GitHub may delay scheduled workflows during heavy load.
-    - cron: "0 3 * * *"
+    # Run shortly after LeetCode's daily reset. GitHub may delay scheduled workflows.
+    - cron: "20 0 * * *"
   workflow_dispatch:
     inputs:
       force:
@@ -43,6 +43,9 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5.6-luna' }}
           OPENAI_REASONING_EFFORT: medium
+          AUTO_SUBMIT: "true"
+          LEETCODE_SESSION: ${{ secrets.LEETCODE_SESSION }}
+          LEETCODE_CSRF_TOKEN: ${{ secrets.LEETCODE_CSRF_TOKEN }}
         run: python leetcode_daily_bot.py ${{ inputs.force && '--force' || '' }}
 
       - name: Commit generated solution
